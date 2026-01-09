@@ -1,11 +1,12 @@
 import telebot
 from telebot import types
 from telebot.types import LabeledPrice
+import os
 
-TOKEN = "6673316226:AAFqXnQqvz6pXegT8VLMQ3axck0SFN40RZ4"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = 5272623103
 
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN)
 
 # ===== MA'LUMOTLAR =====
 user_orders = {}      # {chat_id: {"path": ..., "num": ...}}
