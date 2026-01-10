@@ -13,22 +13,28 @@ user_state = {}      # chat_id: "shablon" | "birthday"
 user_orders = {}     # chat_id: {"path": ..., "num": ...}
 waiting_check = set()
 
-# ================= START =================
-@bot.message_handler(commands=["start"])
-def start(m):
+# ================= ASOSIY MENYU =================
+def main_menu(m):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add("🖼 Rasmli tabriklar")
     kb.add("⏳ Tug‘ilgan kun qachon?")
     kb.add("📞 Kutilmagan qo‘ng‘iroq loyihasi")
 
-    name = m.from_user.first_name or "Do‘stimiz"
     bot.send_message(
         m.chat.id,
-        f"🎉 Xush kelibsiz, {name}!\n\nXizmatni tanlang 👇",
+        "🏠 <b>Asosiy menyu</b>\n\nXizmatni tanlang 👇",
+        parse_mode="HTML",
         reply_markup=kb
     )
 
-# ================= KUTILMAGAN QO‘NG‘IROQ =================
+# ================= START =================
+@bot.message_handler(commands=["start"])
+def start(m):
+    name = m.from_user.first_name or "Do‘stimiz"
+    bot.send_message(m.chat.id, f"🎉 Xush kelibsiz, {name}!")
+    main_menu(m)
+
+# ================= QO‘NG‘IROQ =================
 @bot.message_handler(func=lambda m: m.text == "📞 Kutilmagan qo‘ng‘iroq loyihasi")
 def call_project(m):
     bot.send_message(
@@ -53,7 +59,7 @@ def shablon(m):
     bot.send_photo(
         m.chat.id,
         open("images/preview/shablon.png", "rb"),
-        caption="🟢 1–2-rasmlar bepul\n🔒 Qolgan rasmlar pullik",
+        caption="🟢 1–2 bepul\n🔒 Qolganlari pullik",
         reply_markup=kb
     )
 
@@ -74,7 +80,7 @@ def birthday(m):
         reply_markup=kb
     )
 
-# ================= RAQAM TANLASH =================
+# ================= RASM TANLASH =================
 @bot.message_handler(func=lambda m: m.text.isdigit())
 def choose_image(m):
     chat_id = m.chat.id
@@ -84,22 +90,16 @@ def choose_image(m):
     if not state:
         return
 
-    path = (
-        f"images/shablon/{num}.png"
-        if state == "shablon"
-        else f"images/birthday/birthday{num}.png"
-    )
+    path = f"images/shablon/{num}.png" if state == "shablon" else f"images/birthday/birthday{num}.png"
 
     if not os.path.exists(path):
         bot.send_message(chat_id, "❌ Rasm topilmadi")
         return
 
-    # ===== BEPUL =====
     if num <= 2:
         bot.send_photo(chat_id, open(path, "rb"), caption="✅ Bepul rasm")
         return
 
-    # ===== PULLIK =====
     user_orders[chat_id] = {"path": path, "num": num}
 
     kb = types.InlineKeyboardMarkup()
@@ -108,8 +108,8 @@ def choose_image(m):
 
     bot.send_message(
         chat_id,
-        f"🔒 <b>#{num} tanlagan rasmingiz pullik</b>\n\n"
-        "Tanlagan rasmingizni olish uchun <b>to‘lovni amalga oshirishingiz kerak</b>.",
+        f"🔒 <b>#{num} pullik rasm</b>\n\n"
+        "Rasmni olish uchun to‘lov qiling.",
         parse_mode="HTML",
         reply_markup=kb
     )
@@ -140,22 +140,17 @@ def stars_success(m):
 def pay_card(c):
     chat_id = c.message.chat.id
     waiting_check.add(chat_id)
-
     order = user_orders.get(chat_id)
-    if not order:
-        return
-
-    num = order["num"]
 
     bot.send_message(
         chat_id,
-        f"🖼 <b>#{num} tanlangan rasm</b>\n\n"
-        "💳 <b>Karta orqali to‘lov:</b>\n\n"
-        "🖼 Rasm narxi: <b>2 000 so‘m</b>\n\n"
-        "💳 <code>4073420087931386</code>\n"
-        "👤 Abrorjon Urayimov\n\n"
-        "📸 To‘lovdan keyin chek rasmini yuboring.\n\n"
-        "✅ Admin tasdiqlagach rasm yuboriladi.",
+        f"💳 <b>Karta orqali to‘lov</b>\n\n"
+        "Narx: <b>2 000 so‘m</b>\n"
+        "Karta: <code>4073420087931386</code>\n"
+        "Ism: Abrorjon Urayimov\n\n"
+        "📸 Chek rasmini yuboring.",
+        "✔️ Toʻlov cheki tasdiqlanishi bilan tanlangan rasmingiz sizga yuboriladi!"
+        "Toʻlov tasdiqlanishi 6 soat" 
         parse_mode="HTML"
     )
 
@@ -165,8 +160,7 @@ def check(m):
     if m.chat.id not in waiting_check:
         return
 
-    user = m.from_user
-    uid = user.id
+    uid = m.from_user.id
 
     kb = types.InlineKeyboardMarkup()
     kb.add(
@@ -177,12 +171,11 @@ def check(m):
     bot.send_photo(
         ADMIN_ID,
         m.photo[-1].file_id,
-        caption=f"💳 <b>To‘lov cheki</b>\n\n👤 {user.first_name}\n🆔 <code>{uid}</code>",
-        parse_mode="HTML",
+        caption=f"💳 Chek\n👤 {m.from_user.first_name}\n🆔 {uid}",
         reply_markup=kb
     )
 
-    bot.send_message(m.chat.id, "⏳ Chek admin tekshiruviga yuborildi.")
+    bot.send_message(m.chat.id, "⏳ Chek adminga yuborildi.")
 
 # ================= ADMIN =================
 @bot.callback_query_handler(func=lambda c: c.data.startswith(("ok_", "no_")))
@@ -194,21 +187,19 @@ def admin_decision(c):
         order = user_orders.pop(uid, None)
         if order:
             bot.send_photo(uid, open(order["path"], "rb"))
-            bot.send_message(uid, "✅ To‘lov tasdiqlandi!")
+            bot.send_message(uid, "✅ To‘lov tasdiqlandi")
     else:
         bot.send_message(uid, "❌ To‘lov rad etildi")
 
     waiting_check.discard(uid)
-    bot.edit_message_caption("✅ Yakunlandi", ADMIN_ID, c.message.message_id)
+    bot.edit_message_caption("Yakunlandi", ADMIN_ID, c.message.message_id)
 
-# ================= ORQAGA =================
+# ================= ORQAGA (ASOSIY MENYU) =================
 @bot.message_handler(func=lambda m: m.text == "⬅️ Orqaga")
 def back(m):
-    state = user_state.get(m.chat.id)
-    if state == "shablon":
-        shablon(m)
-    elif state == "birthday":
-        birthday(m)
+    bot.clear_step_handler_by_chat_id(m.chat.id)
+    user_state.pop(m.chat.id, None)
+    main_menu(m)
 
 # ================= RUN =================
 print("Bot ishga tushdi")
