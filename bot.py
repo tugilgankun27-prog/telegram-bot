@@ -152,8 +152,7 @@ def pay_card(c):
     "✅ To‘lov cheki tasdiqlanishi bilan tanlangan rasmingiz yuboriladi!",
     parse_mode="HTML"
 )
-    )
-
+    
 # ================= CHEK =================
 @bot.message_handler(content_types=["photo"])
 def check(m):
