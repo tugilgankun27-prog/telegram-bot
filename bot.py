@@ -23,9 +23,14 @@ def start(m):
     name = m.from_user.first_name or "Do‘stimiz"
     bot.send_message(
         m.chat.id,
-        f"🎉 Xush kelibsiz, {name}!\n\nXizmatlardan birini tanlang 👇",
+        f"🏠 Bosh sahifa\n\n🎉 Xush kelibsiz, {name}!\nXizmatlardan birini tanlang 👇",
         reply_markup=kb
     )
+
+# ================= ORQAGA =================
+@bot.message_handler(func=lambda m: m.text == "♻️ Orqaga")
+def back(m):
+    start(m)
 
 # ================= KUTILMAGAN QO‘NG‘IROQ =================
 @bot.message_handler(func=lambda m: m.text == "📞 Kutilmagan qo‘ng‘iroq loyihasi")
@@ -40,71 +45,58 @@ def call_project(m):
     )
     bot.send_message(m.chat.id, text, parse_mode="HTML")
 
-# ================= TUG‘ILGAN KUN =================
+# ================= TUG‘ILGAN KUN (PREVIEW + RAQAMLAR) =================
 @bot.message_handler(func=lambda m: m.text == "⏳ Tug‘ilgan kun qachon?")
 def birthday(m):
-    kb = types.InlineKeyboardMarkup(row_width=3)
-    for i in range(1, 7):
-        kb.add(types.InlineKeyboardButton(str(i), callback_data=f"bd_{i}"))
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.row("1", "2", "3")
+    kb.row("4", "5", "6")
+    kb.row("♻️ Orqaga")
 
     bot.send_photo(
         m.chat.id,
         open("images/preview/birthday.png", "rb"),
-        caption="1–2 bepul, 3–6 pullik",
+        caption="🟢 Kerakli raqamni tanlang.\n\n1–2 bepul, 3–6 pullik",
         reply_markup=kb
     )
 
-# ================= SHABLON =================
-@bot.message_handler(func=lambda m: m.text == "🖼 Rasmli tabriklar")
-def shablon(m):
-    kb = types.InlineKeyboardMarkup(row_width=4)
-    for i in range(1, 13):
-        kb.add(types.InlineKeyboardButton(str(i), callback_data=f"sh_{i}"))
-
-    bot.send_photo(
-        m.chat.id,
-        open("images/preview/shablon.png", "rb"),
-        caption="1–2 bepul, qolganlari pullik",
-        reply_markup=kb
-    )
-
-# ================= RASM TANLASH =================
-@bot.callback_query_handler(func=lambda c: c.data.startswith(("bd_", "sh_")))
-def choose_image(c):
-    chat_id = c.message.chat.id
-    kind, num = c.data.split("_")
-    num = int(num)
-
-    path = (
-        f"images/birthday/birthday{num}.png"
-        if kind == "bd"
-        else f"images/shablon/{num}.png"
-    )
+# ================= RASM TANLASH (REPLY) =================
+@bot.message_handler(func=lambda m: m.text.isdigit() and 1 <= int(m.text) <= 6)
+def choose_birthday_image(m):
+    chat_id = m.chat.id
+    num = int(m.text)
+    path = f"images/birthday/birthday{num}.png"
 
     if num <= 2:
-        bot.send_photo(chat_id, open(path, "rb"))
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        kb.add("♻️ Orqaga")
+        bot.send_photo(
+            chat_id,
+            open(path, "rb"),
+            caption="✅ Bepul rasm",
+            reply_markup=kb
+        )
         return
 
     user_orders[chat_id] = {"path": path, "num": num}
 
-    kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("⭐ Telegram Stars — 10", callback_data="pay_stars"))
-    kb.add(types.InlineKeyboardButton("💳 Karta — 2 000 so‘m", callback_data="pay_card"))
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add("⭐ Telegram Stars")
+    kb.add("💳 Karta orqali to‘lov")
+    kb.add("♻️ Orqaga")
 
     bot.send_message(
         chat_id,
-        f"🔒 <b>🖼 #{num} Rasm pullik</b>\n\n"
-        "Rasmni olish uchun avval to‘lovni amalga oshiring.",
-        parse_mode="HTML",
+        f"🔒 #{num} rasm pullik.\nTo‘lov turini tanlang:",
         reply_markup=kb
     )
 
 # ================= STARS =================
-@bot.callback_query_handler(func=lambda c: c.data == "pay_stars")
-def stars(c):
+@bot.message_handler(func=lambda m: m.text == "⭐ Telegram Stars")
+def stars(m):
     prices = [LabeledPrice("Premium rasm", 10)]
     bot.send_invoice(
-        chat_id=c.message.chat.id,
+        chat_id=m.chat.id,
         title="Premium rasm",
         description="Telegram Stars orqali to‘lov",
         provider_token="",
@@ -121,9 +113,9 @@ def stars_success(m):
     bot.send_message(m.chat.id, "✅ Stars to‘lovi qabul qilindi!")
 
 # ================= KARTA =================
-@bot.callback_query_handler(func=lambda c: c.data == "pay_card")
-def card(c):
-    chat_id = c.message.chat.id
+@bot.message_handler(func=lambda m: m.text == "💳 Karta orqali to‘lov")
+def card(m):
+    chat_id = m.chat.id
     waiting_check.add(chat_id)
 
     order = user_orders.get(chat_id)
@@ -135,13 +127,12 @@ def card(c):
 
     bot.send_message(
         chat_id,
-        f"🖼 #{num} Rasm muvaffaqiyatli tanlandi!\n\n"
-        "💳 <b>Karta orqali to‘lov:</b>\n\n"
-        "🖼 Rasm narxi: <b>2 000 so‘m</b>\n\n"
+        f"🖼 #{num} rasm tanlandi.\n\n"
+        "💳 <b>Karta orqali to‘lov:</b>\n"
+        "<b>2 000 so‘m</b>\n\n"
         "💳 <code>4073420087931386</code>\n"
         "👤 Abrorjon Urayimov\n\n"
-        "📸 Iltimos, to‘lovdan keyin chek rasmini yuboring.\n\n"
-        "✅ To‘lovdan so‘ng tanlangan rasm admin tasdiqlashi bilan sizga yuboriladi.",
+        "📸 To‘lovdan keyin chek rasmini yuboring.",
         parse_mode="HTML"
     )
 
