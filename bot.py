@@ -143,15 +143,15 @@ def pay_card(c):
     order = user_orders.get(chat_id)
 
     bot.send_message(
-        chat_id,
-        f"💳 <b>Karta orqali to‘lov</b>\n\n"
-        "Narx: <b>2 000 so‘m</b>\n"
-        "Karta: <code>4073420087931386</code>\n"
-        "Ism: Abrorjon Urayimov\n\n"
-        "📸 Chek rasmini yuboring.",
-        "✔️ Toʻlov cheki tasdiqlanishi bilan tanlangan rasmingiz sizga yuboriladi!"
-        "Toʻlov tasdiqlanishi 6 soat" 
-        parse_mode="HTML"
+    chat_id,
+    f"💳 <b>Karta orqali to‘lov</b>\n\n"
+    "Narx: <b>2 000 so‘m</b>\n"
+    "Karta: <code>4073420087931386</code>\n"
+    "Ism: Abrorjon Urayimov\n\n"
+    "📸 Chek rasmini yuboring.\n\n"
+    "✅ To‘lov cheki tasdiqlanishi bilan tanlangan rasmingiz yuboriladi!",
+    parse_mode="HTML"
+)
     )
 
 # ================= CHEK =================
@@ -164,9 +164,9 @@ def check(m):
 
     kb = types.InlineKeyboardMarkup()
     kb.add(
-        types.InlineKeyboardButton("✅ Tasdiqlash", callback_data=f"ok_{uid}"),
-        types.InlineKeyboardButton("❌ Rad etish", callback_data=f"no_{uid}")
-    )
+    types.InlineKeyboardButton("✅ Tasdiqlash", callback_data=f"ok_{uid}"),
+    types.InlineKeyboardButton("❌ Rad etish", callback_data=f"no_{uid}")
+)
 
     bot.send_photo(
         ADMIN_ID,
